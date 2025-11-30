@@ -1,24 +1,24 @@
 {
-  "name": "zotero-plugin-template",
+  "name": "zotero-metadata-search-plugin",
   "type": "module",
-  "version": "3.1.0",
-  "description": "Zotero Plugin Template",
+  "version": "0.0.1",
+  "description": "Update Zotero items with metadata from bibliographic databases like CrossRef.org and DBLP.org",
   "config": {
-    "addonName": "Zotero Plugin Template",
-    "addonID": "addontemplate@euclpts.com",
-    "addonRef": "addontemplate",
-    "addonInstance": "AddonTemplate",
-    "prefsPrefix": "extensions.zotero.addontemplate"
+    "addonName": "Metadata Search",
+    "addonID": "metadatasearch@emptysquare.net",
+    "addonRef": "metadatasearch",
+    "addonInstance": "MetadataSearch",
+    "prefsPrefix": "extensions.zotero.metadatasearch"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/windingwind/zotero-plugin-template.git"
+    "url": "git+https://github.com/ajdavis/zotero-metadata-search-plugin.git"
   },
-  "author": "windingwind",
+  "author": "ajdavis",
   "bugs": {
-    "url": "https://github.com/windingwind/zotero-plugin-template/issues"
+    "url": "https://github.com/ajdavis/zotero-metadata-search-plugin/issues"
   },
-  "homepage": "https://github.com/windingwind/zotero-plugin-template#readme",
+  "homepage": "https://github.com/ajdavis/zotero-metadata-search-plugin#readme",
   "license": "AGPL-3.0-or-later",
   "scripts": {
     "start": "zotero-plugin serve",
