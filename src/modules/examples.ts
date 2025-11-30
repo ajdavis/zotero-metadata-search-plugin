@@ -78,49 +78,6 @@ export class BasicExampleFactory {
   }
 }
 
-export class KeyExampleFactory {
-  @example
-  static registerShortcuts() {
-    // Register an event key for Alt+L
-    ztoolkit.Keyboard.register((ev, keyOptions) => {
-      ztoolkit.log(ev, keyOptions.keyboard);
-      if (keyOptions.keyboard?.equals("shift,l")) {
-        addon.hooks.onShortcuts("larger");
-      }
-      if (ev.shiftKey && ev.key === "S") {
-        addon.hooks.onShortcuts("smaller");
-      }
-    });
-
-    new ztoolkit.ProgressWindow(addon.data.config.addonName)
-      .createLine({
-        text: "Example Shortcuts: Alt+L/S/C",
-        type: "success",
-      })
-      .show();
-  }
-
-  @example
-  static exampleShortcutLargerCallback() {
-    new ztoolkit.ProgressWindow(addon.data.config.addonName)
-      .createLine({
-        text: "Larger!",
-        type: "default",
-      })
-      .show();
-  }
-
-  @example
-  static exampleShortcutSmallerCallback() {
-    new ztoolkit.ProgressWindow(addon.data.config.addonName)
-      .createLine({
-        text: "Smaller!",
-        type: "default",
-      })
-      .show();
-  }
-}
-
 export class UIExampleFactory {
   @example
   static registerStyleSheet(win: _ZoteroTypes.MainWindow) {
