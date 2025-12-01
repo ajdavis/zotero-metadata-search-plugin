@@ -15,7 +15,7 @@ export class MetadataSearchPlugin {
     // item menuitem with icon
     ztoolkit.Menu.register("item", {
       tag: "menuitem",
-      id: "zotero-itemmenu-addontemplate-test",
+      id: "zotero-metadata-search-plugin-rightclick-menuitem",
       label: getString("menuitem-label"),
       commandListener: (ev) => addon.hooks.onDialogEvents("showMetadataSearchDialog"),
       icon: menuIcon,
@@ -229,14 +229,6 @@ export class MetadataSearchPlugin {
       )
       .addButton("Confirm", "confirm")
       .addButton("Cancel", "cancel")
-      .addButton("Help", "help", {
-        noClose: true,
-        callback: (e) => {
-          dialogHelper.window?.alert(
-            "Help Clicked! Dialog will not be closed.",
-          );
-        },
-      })
       .setDialogData(dialogData)
       .open("Metadata Search");
     addon.data.dialog = dialogHelper;
