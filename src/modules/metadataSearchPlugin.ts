@@ -4,6 +4,7 @@ import { getPref, setPref } from "../utils/prefs";
 interface SearchResult {
   source: string;
   title: string;
+  creators: any[];
   fields: Record<string, string>;
   similarity: number;
 }
@@ -83,29 +84,61 @@ export class MetadataSearchPlugin {
     const data = await response.json();
     ztoolkit.log("CrossRef data:", data);
     const results: SearchResult[] = [];
+
+    // Mapping from CrossRef fields to Zotero item fields
+    const fieldMapping: Record<string, string> = {
+      title: "title",
+      DOI: "DOI",
+      publisher: "publisher",
+      volume: "volume",
+      issue: "issue",
+      page: "pages",
+      ISBN: "ISBN",
+      ISSN: "ISSN",
+      "container-title": "publicationTitle",
+      "short-container-title": "journalAbbreviation",
+      abstract: "abstractNote",
+      URL: "url",
+      language: "language",
+    };
+
     for (const item of data.message?.items || []) {
       const fields: Record<string, string> = {};
-      if (item.title?.[0]) fields.title = item.title[0];
+      let creators: any[] = [];
+
       if (item.author) {
-        fields.author = item.author
-          .map((a: any) => `${a.given || ""} ${a.family || ""}`.trim())
-          .join(", ");
+        creators = item.author
+          .map((a: any) => ({
+            creatorType: "author",
+            firstName: a.given || "",
+            lastName: a.family || "",
+          }))
+          .filter((c: any) => c.firstName || c.lastName);
       }
-      if (item.published) {
-        const date = item.published["date-parts"]?.[0];
-        if (date) fields.date = date.join("-");
+
+      const dateParts =
+        item.published?.["date-parts"]?.[0] ||
+        item["published-print"]?.["date-parts"]?.[0] ||
+        item["published-online"]?.["date-parts"]?.[0];
+      if (dateParts) fields.date = dateParts.join("-");
+
+      for (const [crossrefKey, zoteroKey] of Object.entries(fieldMapping)) {
+        if (item[crossrefKey]) {
+          if (
+            Array.isArray(item[crossrefKey]) &&
+            item[crossrefKey].length === 1
+          ) {
+            fields[zoteroKey] = String(item[crossrefKey][0]);
+          } else {
+            fields[zoteroKey] = String(item[crossrefKey]);
+          }
+        }
       }
-      if (item["container-title"]?.[0]) {
-        fields.publicationTitle = item["container-title"][0];
-      }
-      if (item.DOI) fields.DOI = item.DOI;
-      if (item.publisher) fields.publisher = item.publisher;
-      if (item.volume) fields.volume = item.volume;
-      if (item.issue) fields.issue = item.issue;
-      if (item.page) fields.pages = item.page;
+
       results.push({
         source: "CrossRef",
         title: fields.title || "",
+        creators,
         fields,
         similarity: this.titleSimilarity(title, fields.title || ""),
       });
@@ -126,23 +159,46 @@ export class MetadataSearchPlugin {
     const data = await response.json();
     ztoolkit.log("DBLP data:", data);
     const results: SearchResult[] = [];
+
+    const fieldMapping: Record<string, string> = {
+      title: "title",
+      doi: "DOI",
+      year: "date",
+      venue: "publicationTitle",
+      ee: "url",
+      volume: "volume",
+    };
+
     for (const hit of data.result?.hits?.hit || []) {
       const info = hit.info;
       const fields: Record<string, string> = {};
-      if (info.title) fields.title = info.title;
+      let creators: any[] = [];
+
       if (info.authors?.author) {
         const authors = Array.isArray(info.authors.author)
           ? info.authors.author
           : [info.authors.author];
-        fields.author = authors.map((a: any) => a.text || a).join(", ");
+        creators = authors
+          .map((a: any) => {
+            const fullName = a.text || a;
+            const nameParts = fullName.split(" ");
+            return {
+              creatorType: "author",
+              firstName: nameParts.slice(0, -1).join(" "),
+              lastName: nameParts[nameParts.length - 1] || "",
+            };
+          })
+          .filter((c: any) => c.firstName || c.lastName);
       }
-      if (info.year) fields.date = info.year;
-      if (info.venue) fields.publicationTitle = info.venue;
-      if (info.doi) fields.DOI = info.doi;
-      if (info.ee) fields.url = info.ee;
+
+      for (const [dblpKey, zoteroKey] of Object.entries(fieldMapping)) {
+        if (info[dblpKey]) fields[zoteroKey] = String(info[dblpKey]);
+      }
+
       results.push({
         source: "DBLP",
         title: fields.title || "",
+        creators,
         fields,
         similarity: this.titleSimilarity(title, fields.title || ""),
       });
@@ -223,7 +279,7 @@ export class MetadataSearchPlugin {
     heading.innerHTML = "Item Metadata";
     container.appendChild(heading);
 
-    for (const [key, value] of Object.entries(fields)) {
+    const createFieldDiv = (key: string, value: string): HTMLDivElement => {
       const fieldDiv = doc.createElement("div")!;
       fieldDiv.style.display = "flex";
       fieldDiv.style.alignItems = "center";
@@ -240,7 +296,11 @@ export class MetadataSearchPlugin {
       valueSpan.textContent = value;
       fieldDiv.appendChild(valueSpan);
 
-      container.appendChild(fieldDiv);
+      return fieldDiv;
+    };
+
+    for (const [key, value] of Object.entries(fields)) {
+      container.appendChild(createFieldDiv(key, value));
     }
 
     const searchOptionsDiv = doc.createElement("div")!;
@@ -326,26 +386,21 @@ export class MetadataSearchPlugin {
         resultSection.style.marginTop = "20px";
 
         const title = doc.createElement("h3")!;
-        title.innerHTML = `${result.source}: ${result.title}`;
+        title.innerHTML = `${result.title} (${result.source})`;
         resultSection.appendChild(title);
+        if (result.creators.length > 0) {
+          resultSection.appendChild(
+            createFieldDiv(
+              "creators",
+              result.creators
+                .map((c: any) => `${c.firstName} ${c.lastName}`.trim())
+                .join(", "),
+            ),
+          );
+        }
 
         for (const [key, value] of Object.entries(result.fields)) {
-          const fieldDiv = doc.createElement("div")!;
-          fieldDiv.style.display = "flex";
-          fieldDiv.style.alignItems = "center";
-
-          const keySpan = doc.createElement("span")!;
-          keySpan.style.width = "120px";
-          keySpan.style.textAlign = "right";
-          keySpan.style.fontWeight = "bold";
-          keySpan.style.marginRight = "8px";
-          keySpan.textContent = `${key}:`;
-          fieldDiv.appendChild(keySpan);
-
-          const valueSpan = doc.createElement("span")!;
-          valueSpan.textContent = value;
-          fieldDiv.appendChild(valueSpan);
-          resultSection.appendChild(fieldDiv);
+          resultSection.appendChild(createFieldDiv(key, value));
         }
 
         resultsContainer.appendChild(resultSection);
