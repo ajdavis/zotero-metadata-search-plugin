@@ -22,27 +22,6 @@ export class MetadataSearchPlugin {
     });
   }
 
-  static registerRightClickMenuPopup(win: Window) {
-    ztoolkit.Menu.register(
-      "item",
-      {
-        tag: "menu",
-        label: getString("menupopup-label"),
-        children: [
-          {
-            tag: "menuitem",
-            label: getString("menuitem-submenulabel"),
-            oncommand: "alert('Hello World! Sub Menuitem.')",
-          },
-        ],
-      },
-      "before",
-      win.document?.querySelector(
-        "#zotero-itemmenu-addontemplate-test",
-      ) as XUL.MenuItem,
-    );
-  }
-
   static async showMetadataSearchDialog() {
     const dialogData: { [key: string | number]: any } = {
       inputValue: "test",
@@ -259,14 +238,14 @@ export class MetadataSearchPlugin {
         },
       })
       .setDialogData(dialogData)
-      .open("Dialog Example");
+      .open("Metadata Search");
     addon.data.dialog = dialogHelper;
     await dialogData.unloadLock.promise;
     addon.data.dialog = undefined;
-    if (addon.data.alive)
-      ztoolkit.getGlobal("alert")(
-        `Close dialog with ${dialogData._lastButtonId}.\nCheckbox: ${dialogData.checkboxValue}\nInput: ${dialogData.inputValue}.`,
-      );
+    // if (addon.data.alive)
+    //   ztoolkit.getGlobal("alert")(
+    //     `Close dialog with ${dialogData._lastButtonId}.\nCheckbox: ${dialogData.checkboxValue}\nInput: ${dialogData.inputValue}.`,
+    //   );
     ztoolkit.log(dialogData);
   }
 }

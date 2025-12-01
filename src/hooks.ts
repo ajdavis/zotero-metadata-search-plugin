@@ -32,12 +32,6 @@ async function onMainWindowLoad(win: _ZoteroTypes.MainWindow): Promise<void> {
   );
 
   MetadataSearchPlugin.registerRightClickMenuItem();
-
-  MetadataSearchPlugin.registerRightClickMenuPopup(win);
-
-  await Zotero.Promise.delay(500);
-
-  addon.hooks.onDialogEvents("showMetadataSearchDialog");
 }
 
 async function onMainWindowUnload(win: Window): Promise<void> {
