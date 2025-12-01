@@ -3,16 +3,4 @@
 /* eslint-disable */
 // @ts-nocheck
 export type FluentMessageId =
-  | 'item-info-row-example-label'
-  | 'item-section-example1-head-text'
-  | 'item-section-example1-sidenav-tooltip'
-  | 'item-section-example2-button-tooltip'
-  | 'item-section-example2-head-text'
-  | 'item-section-example2-sidenav-tooltip'
-  | 'menuitem-label'
-  | 'pref-crossref-enable'
-  | 'pref-dblp-enable'
-  | 'pref-help'
-  | 'pref-input'
-  | 'pref-title'
-  | 'prefs-title';
+  | 'menuitem-label';

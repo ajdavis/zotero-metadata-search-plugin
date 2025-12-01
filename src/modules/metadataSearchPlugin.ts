@@ -1,4 +1,3 @@
-import { create } from "domain";
 import { getString } from "../utils/locale";
 import { getPref, setPref } from "../utils/prefs";
 
@@ -26,37 +25,6 @@ export class MetadataSearchPlugin {
         this.showMetadataSearchDialog(itemID);
       },
       icon: menuIcon,
-    });
-  }
-
-  private static addKeyValueCell(
-    dialogHelper: any,
-    row: number,
-    key: string,
-    value: string,
-  ) {
-    dialogHelper.addCell(row, 0, {
-      tag: "div",
-      styles: {
-        display: "flex",
-        alignItems: "center",
-      },
-      children: [
-        {
-          tag: "span",
-          styles: {
-            width: "120px",
-            textAlign: "right",
-            fontWeight: "bold",
-            marginRight: "8px",
-          },
-          properties: { textContent: `${key}:` },
-        },
-        {
-          tag: "span",
-          properties: { textContent: value },
-        },
-      ],
     });
   }
 
