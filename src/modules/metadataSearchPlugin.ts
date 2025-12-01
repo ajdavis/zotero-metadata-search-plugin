@@ -1,5 +1,5 @@
 import { getString } from "../utils/locale";
-import { getPref } from "../utils/prefs";
+import { getPref, setPref } from "../utils/prefs";
 
 interface SearchResult {
   source: string;
@@ -9,15 +9,6 @@ interface SearchResult {
 }
 
 export class MetadataSearchPlugin {
-  static registerPrefs() {
-    Zotero.PreferencePanes.register({
-      pluginID: addon.data.config.addonID,
-      src: rootURI + "content/preferences.xhtml",
-      label: getString("prefs-title"),
-      image: `chrome://${addon.data.config.addonRef}/content/icons/favicon.png`,
-    });
-  }
-
   static registerRightClickMenuItem() {
     const menuIcon = `chrome://${addon.data.config.addonRef}/content/icons/favicon@0.5x.png`;
     // item menuitem with icon
@@ -252,42 +243,84 @@ export class MetadataSearchPlugin {
       container.appendChild(fieldDiv);
     }
 
+    const searchOptionsDiv = doc.createElement("div")!;
+    searchOptionsDiv.style.marginTop = "20px";
+    searchOptionsDiv.style.display = "flex";
+    searchOptionsDiv.style.gap = "20px";
+
+    for (const source of ["crossref", "dblp"]) {
+      const checkbox = doc.createElement("input")!;
+      checkbox.type = "checkbox";
+      checkbox.id = `${source}-checkbox`;
+      checkbox.checked = getPref(
+        `${source}-enable` as "crossref-enable" | "dblp-enable",
+      );
+
+      const label = doc.createElement("label")!;
+      label.htmlFor = `${source}-checkbox`;
+      label.textContent = source === "crossref" ? "CrossRef.org" : "DBLP.org";
+      label.style.display = "flex";
+      label.style.alignItems = "center";
+      label.style.gap = "5px";
+      label.insertBefore(checkbox, label.firstChild);
+
+      searchOptionsDiv.appendChild(label);
+
+      checkbox.addEventListener("change", () => {
+        setPref(
+          `${source}-enable` as "crossref-enable" | "dblp-enable",
+          checkbox.checked,
+        );
+      });
+    }
+
+    container.appendChild(searchOptionsDiv);
+
+    const searchButton = doc.createElement("button")!;
+    searchButton.textContent = "Search";
+    searchButton.style.marginTop = "10px";
+    searchButton.style.padding = "5px 15px";
+    container.appendChild(searchButton);
+
     const progressDiv = doc.createElement("div")!;
     progressDiv.id = "search-progress";
     progressDiv.style.marginTop = "20px";
     progressDiv.style.fontStyle = "italic";
-    progressDiv.innerHTML = "Searching...";
+    progressDiv.innerHTML = "";
     container.appendChild(progressDiv);
     const resultsDiv = doc.createElement("div")!;
     resultsDiv.id = "search-results";
     resultsDiv.style.marginTop = "10px";
     container.appendChild(resultsDiv);
 
-    const searchPromises: Promise<SearchResult[]>[] = [];
-    if (getPref("crossref-enable")) {
-      searchPromises.push(this.searchCrossRef(itemTitle, creators));
-    }
-    if (getPref("dblp-enable")) {
-      searchPromises.push(this.searchDBLP(itemTitle, creators));
-    }
+    searchButton.addEventListener("click", async () => {
+      const progressElement = doc.getElementById("search-progress")!;
+      const resultsContainer = doc.getElementById("search-results")!;
 
-    const allResults: SearchResult[] = [];
-    const resultsArrays = await Promise.allSettled(searchPromises);
-    for (const result of resultsArrays) {
-      if (result.status === "fulfilled") {
-        allResults.push(...result.value);
+      progressElement.innerHTML = "Searching...";
+      resultsContainer.innerHTML = "";
+      searchButton.disabled = true;
+
+      const searchPromises: Promise<SearchResult[]>[] = [];
+      if (getPref("crossref-enable")) {
+        searchPromises.push(this.searchCrossRef(itemTitle, creators));
       }
-    }
+      if (getPref("dblp-enable")) {
+        searchPromises.push(this.searchDBLP(itemTitle, creators));
+      }
 
-    allResults.sort((a, b) => a.similarity - b.similarity);
+      const allResults: SearchResult[] = [];
+      const resultsArrays = await Promise.allSettled(searchPromises);
+      for (const result of resultsArrays) {
+        if (result.status === "fulfilled") {
+          allResults.push(...result.value);
+        }
+      }
 
-    const progressElement = doc.getElementById("search-progress");
-    if (progressElement) {
+      allResults.sort((a, b) => a.similarity - b.similarity);
+
       progressElement.innerHTML = `Found ${allResults.length} results`;
-    }
 
-    const resultsContainer = doc.getElementById("search-results");
-    if (resultsContainer) {
       for (const result of allResults) {
         const resultSection = doc.createElement("div")!;
         resultSection.style.marginTop = "20px";
@@ -317,7 +350,9 @@ export class MetadataSearchPlugin {
 
         resultsContainer.appendChild(resultSection);
       }
-    }
+
+      searchButton.disabled = false;
+    });
 
     await dialogData.unloadLock.promise;
     addon.data.dialog = undefined;
