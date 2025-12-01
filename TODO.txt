@@ -1,2 +1,3 @@
 remove mainWindow.ftl?
 make dialog modal
+replace ztoolkit.Menu call with Zotero.MenuManager, the former is deprecated: https://windingwind.github.io/zotero-plugin-toolkit/reference/Class.MenuManager.html

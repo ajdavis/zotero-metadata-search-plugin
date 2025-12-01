@@ -17,12 +17,26 @@ export class MetadataSearchPlugin {
       tag: "menuitem",
       id: "zotero-metadata-search-plugin-rightclick-menuitem",
       label: getString("menuitem-label"),
-      commandListener: (ev) => addon.hooks.onDialogEvents("showMetadataSearchDialog"),
+      commandListener: (ev) => {
+        const itemID: number = Number(ev.composedTarget?.parentNode?.attributes.getNamedItem("itemID")?.value);
+        this.showMetadataSearchDialog(itemID);
+      },
       icon: menuIcon,
     });
   }
 
-  static async showMetadataSearchDialog() {
+  static async showMetadataSearchDialog(itemID?: number) {
+    if (!itemID) {
+      ztoolkit.log("No item ID provided for Metadata Search dialog.");
+      return;
+    }
+    const item = itemID ? await Zotero.Items.getAsync(itemID) : null;
+    ztoolkit.log("Showing Metadata Search Dialog for item:", item);
+    if (!item?.isRegularItem()) {
+      ztoolkit.log("Selected item is not a regular item.");
+      ztoolkit.getGlobal("alert")("Selected item is not a regular item.");
+      return;
+    }
     const dialogData: { [key: string | number]: any } = {
       inputValue: "test",
       checkboxValue: true,

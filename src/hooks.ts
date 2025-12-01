@@ -64,14 +64,8 @@ async function onPrefsEvent(type: string, data: { [key: string]: any }) {
   }
 }
 
+// TODO: remove
 function onDialogEvents(type: string) {
-  switch (type) {
-    case "showMetadataSearchDialog":
-      MetadataSearchPlugin.showMetadataSearchDialog();
-      break;
-    default:
-      break;
-  }
 }
 
 // Add your hooks here. For element click, etc.
