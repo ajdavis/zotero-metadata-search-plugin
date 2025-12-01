@@ -1,3 +1,4 @@
+import { create } from "domain";
 import { getString } from "../utils/locale";
 import { getPref, setPref } from "../utils/prefs";
 
@@ -294,6 +295,7 @@ export class MetadataSearchPlugin {
       key: string,
       value: string,
       withCheckbox: boolean = false,
+      creatorData?: any[],
     ): HTMLDivElement => {
       const fieldDiv = doc.createElement("div")!;
       fieldDiv.style.display = "flex";
@@ -304,6 +306,10 @@ export class MetadataSearchPlugin {
         checkbox.type = "checkbox";
         checkbox.style.marginRight = "8px";
         checkbox.dataset.fieldName = key;
+        checkbox.dataset.fieldValue = value;
+        if (creatorData) {
+          checkbox.dataset.creatorData = JSON.stringify(creatorData);
+        }
         checkbox.addEventListener("change", () => {
           if (checkbox.checked) {
             // Uncheck all other checkboxes with the same field name
@@ -373,6 +379,33 @@ export class MetadataSearchPlugin {
 
     container.appendChild(searchOptionsDiv);
 
+    const updateButton = doc.querySelector(
+      'button[id="update"]',
+    ) as HTMLButtonElement;
+    if (updateButton) {
+      updateButton.addEventListener("click", async () => {
+        const checkedBoxes = doc.querySelectorAll(
+          'input[type="checkbox"][data-field-name]:checked',
+        ) as NodeListOf<HTMLInputElement>;
+
+        checkedBoxes.forEach((checkbox) => {
+          const fieldName = checkbox.dataset.fieldName!;
+          const fieldValue = checkbox.dataset.fieldValue!;
+          const creatorData = checkbox.dataset.creatorData;
+
+          if (fieldName === "creators" && creatorData) {
+            item.setCreators(JSON.parse(creatorData));
+          } else {
+            item.setField(fieldName, fieldValue);
+          }
+        });
+
+        await item.saveTx();
+        ztoolkit.getGlobal("alert")("Item updated successfully!");
+        dialogHelper.window?.close();
+      });
+    }
+
     const searchButton = doc.createElement("button")!;
     searchButton.textContent = "Search";
     searchButton.style.marginTop = "10px";
@@ -418,6 +451,26 @@ export class MetadataSearchPlugin {
 
       progressElement.innerHTML = `Found ${allResults.length} results`;
 
+      const createCheckButton = (
+        text: string,
+        resultSection: HTMLElement,
+        checked: boolean,
+      ): HTMLButtonElement => {
+        const button = doc.createElement("button")!;
+        button.textContent = text;
+        button.style.padding = "3px 10px";
+        button.addEventListener("click", () => {
+          const checkboxes = resultSection.querySelectorAll(
+            'input[type="checkbox"][data-field-name]',
+          ) as NodeListOf<HTMLInputElement>;
+          checkboxes.forEach((cb) => {
+            cb.checked = checked;
+          });
+          updateButtonState();
+        });
+        return button;
+      };
+
       for (const result of allResults) {
         const resultSection = doc.createElement("div")!;
         resultSection.style.marginTop = "20px";
@@ -425,6 +478,21 @@ export class MetadataSearchPlugin {
         const title = doc.createElement("h3")!;
         title.innerHTML = `${result.title} (${result.source})`;
         resultSection.appendChild(title);
+
+        const buttonContainer = doc.createElement("div")!;
+        buttonContainer.style.marginBottom = "10px";
+        buttonContainer.style.display = "flex";
+        buttonContainer.style.gap = "10px";
+
+        buttonContainer.appendChild(
+          createCheckButton("Check All", resultSection, true),
+        );
+        buttonContainer.appendChild(
+          createCheckButton("Uncheck All", resultSection, false),
+        );
+
+        resultSection.appendChild(buttonContainer);
+
         if (result.creators.length > 0) {
           resultSection.appendChild(
             createFieldDiv(
@@ -433,6 +501,7 @@ export class MetadataSearchPlugin {
                 .map((c: any) => `${c.firstName} ${c.lastName}`.trim())
                 .join(", "),
               true,
+              result.creators,
             ),
           );
         }
