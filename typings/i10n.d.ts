@@ -18,8 +18,4 @@ export type FluentMessageId =
   | 'pref-help'
   | 'pref-input'
   | 'pref-title'
-  | 'prefs-title'
-  | 'startup-begin'
-  | 'startup-finish'
-  | 'tabpanel-lib-tab-label'
-  | 'tabpanel-reader-tab-label';
+  | 'prefs-title';

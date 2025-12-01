@@ -1,10 +1,9 @@
 import {
   BasicExampleFactory,
   HelperExampleFactory,
-  PromptExampleFactory,
   UIExampleFactory,
 } from "./modules/examples";
-import { getString, initLocale } from "./utils/locale";
+import { initLocale } from "./utils/locale";
 import { registerPrefsScripts } from "./modules/preferenceScript";
 import { createZToolkit } from "./utils/ztoolkit";
 
@@ -79,18 +78,6 @@ function onDialogEvents(type: string) {
   switch (type) {
     case "dialogExample":
       HelperExampleFactory.dialogExample();
-      break;
-    case "clipboardExample":
-      HelperExampleFactory.clipboardExample();
-      break;
-    case "filePickerExample":
-      HelperExampleFactory.filePickerExample();
-      break;
-    case "progressWindowExample":
-      HelperExampleFactory.progressWindowExample();
-      break;
-    case "vtableExample":
-      HelperExampleFactory.vtableExample();
       break;
     default:
       break;
