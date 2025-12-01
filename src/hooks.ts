@@ -1,8 +1,4 @@
-import {
-  BasicExampleFactory,
-  HelperExampleFactory,
-  UIExampleFactory,
-} from "./modules/examples";
+import { MetadataSearchPlugin } from "./modules/metadataSearchPlugin";
 import { initLocale } from "./utils/locale";
 import { registerPrefsScripts } from "./modules/preferenceScript";
 import { createZToolkit } from "./utils/ztoolkit";
@@ -16,7 +12,7 @@ async function onStartup() {
 
   initLocale();
 
-  BasicExampleFactory.registerPrefs();
+  MetadataSearchPlugin.registerPrefs();
 
   await Promise.all(
     Zotero.getMainWindows().map((win) => onMainWindowLoad(win)),
@@ -35,13 +31,13 @@ async function onMainWindowLoad(win: _ZoteroTypes.MainWindow): Promise<void> {
     `${addon.data.config.addonRef}-mainWindow.ftl`,
   );
 
-  UIExampleFactory.registerRightClickMenuItem();
+  MetadataSearchPlugin.registerRightClickMenuItem();
 
-  UIExampleFactory.registerRightClickMenuPopup(win);
+  MetadataSearchPlugin.registerRightClickMenuPopup(win);
 
   await Zotero.Promise.delay(500);
 
-  addon.hooks.onDialogEvents("dialogExample");
+  addon.hooks.onDialogEvents("showMetadataSearchDialog");
 }
 
 async function onMainWindowUnload(win: Window): Promise<void> {
@@ -76,8 +72,8 @@ async function onPrefsEvent(type: string, data: { [key: string]: any }) {
 
 function onDialogEvents(type: string) {
   switch (type) {
-    case "dialogExample":
-      HelperExampleFactory.dialogExample();
+    case "showMetadataSearchDialog":
+      MetadataSearchPlugin.showMetadataSearchDialog();
       break;
     default:
       break;

@@ -1,6 +1,6 @@
 import { getString } from "../utils/locale";
 
-export class BasicExampleFactory {
+export class MetadataSearchPlugin {
   static registerPrefs() {
     Zotero.PreferencePanes.register({
       pluginID: addon.data.config.addonID,
@@ -9,9 +9,7 @@ export class BasicExampleFactory {
       image: `chrome://${addon.data.config.addonRef}/content/icons/favicon.png`,
     });
   }
-}
 
-export class UIExampleFactory {
   static registerRightClickMenuItem() {
     const menuIcon = `chrome://${addon.data.config.addonRef}/content/icons/favicon@0.5x.png`;
     // item menuitem with icon
@@ -19,7 +17,7 @@ export class UIExampleFactory {
       tag: "menuitem",
       id: "zotero-itemmenu-addontemplate-test",
       label: getString("menuitem-label"),
-      commandListener: (ev) => addon.hooks.onDialogEvents("dialogExample"),
+      commandListener: (ev) => addon.hooks.onDialogEvents("showMetadataSearchDialog"),
       icon: menuIcon,
     });
   }
@@ -44,10 +42,8 @@ export class UIExampleFactory {
       ) as XUL.MenuItem,
     );
   }
-}
 
-export class HelperExampleFactory {
-  static async dialogExample() {
+  static async showMetadataSearchDialog() {
     const dialogData: { [key: string | number]: any } = {
       inputValue: "test",
       checkboxValue: true,
