@@ -18,7 +18,10 @@ export class MetadataSearchPlugin {
       id: "zotero-metadata-search-plugin-rightclick-menuitem",
       label: getString("menuitem-label"),
       commandListener: (ev) => {
-        const itemID: number = Number(ev.composedTarget?.parentNode?.attributes.getNamedItem("itemID")?.value);
+        const itemID: number = Number(
+          ev.composedTarget?.parentNode?.attributes.getNamedItem("itemID")
+            ?.value,
+        );
         this.showMetadataSearchDialog(itemID);
       },
       icon: menuIcon,
@@ -30,16 +33,28 @@ export class MetadataSearchPlugin {
       ztoolkit.log("No item ID provided for Metadata Search dialog.");
       return;
     }
-    const item = itemID ? await Zotero.Items.getAsync(itemID) : null;
+    const item = await Zotero.Items.getAsync(itemID);
     ztoolkit.log("Showing Metadata Search Dialog for item:", item);
     if (!item?.isRegularItem()) {
       ztoolkit.log("Selected item is not a regular item.");
       ztoolkit.getGlobal("alert")("Selected item is not a regular item.");
       return;
     }
+
+    const fields: Record<string, string> = {};
+    const fieldNames = item.getUsedFields(true);
+    for (const fieldName of fieldNames) {
+      if (["abstractnote", "url"].includes(fieldName.toLowerCase())) {
+        continue; // Skip long text fields
+      }
+
+      const value = item.getField(fieldName);
+      if (value) {
+        fields[fieldName] = String(value);
+      }
+    }
+
     const dialogData: { [key: string | number]: any } = {
-      inputValue: "test",
-      checkboxValue: true,
       loadCallback: () => {
         ztoolkit.log(dialogData, "Dialog Opened!");
       },
@@ -47,211 +62,48 @@ export class MetadataSearchPlugin {
         ztoolkit.log(dialogData, "Dialog closed!");
       },
     };
-    const dialogHelper = new ztoolkit.Dialog(10, 2)
-      .addCell(0, 0, {
-        tag: "h1",
-        properties: { innerHTML: "Helper Examples" },
-      })
-      .addCell(1, 0, {
-        tag: "h2",
-        properties: { innerHTML: "Dialog Data Binding" },
-      })
-      .addCell(2, 0, {
-        tag: "p",
-        properties: {
-          innerHTML:
-            "Elements with attribute 'data-bind' are binded to the prop under 'dialogData' with the same name.",
-        },
-        styles: {
-          width: "200px",
-        },
-      })
-      .addCell(3, 0, {
-        tag: "label",
-        namespace: "html",
-        attributes: {
-          for: "dialog-checkbox",
-        },
-        properties: { innerHTML: "bind:checkbox" },
-      })
-      .addCell(
-        3,
-        1,
-        {
-          tag: "input",
-          namespace: "html",
-          id: "dialog-checkbox",
-          attributes: {
-            "data-bind": "checkboxValue",
-            "data-prop": "checked",
-            type: "checkbox",
-          },
-          properties: { label: "Cell 1,0" },
-        },
-        false,
-      )
-      .addCell(4, 0, {
-        tag: "label",
-        namespace: "html",
-        attributes: {
-          for: "dialog-input",
-        },
-        properties: { innerHTML: "bind:input" },
-      })
-      .addCell(
-        4,
-        1,
-        {
-          tag: "input",
-          namespace: "html",
-          id: "dialog-input",
-          attributes: {
-            "data-bind": "inputValue",
-            "data-prop": "value",
-            type: "text",
-          },
-        },
-        false,
-      )
-      .addCell(5, 0, {
-        tag: "h2",
-        properties: { innerHTML: "Toolkit Helper Examples" },
-      })
-      .addCell(
-        6,
-        0,
-        {
-          tag: "button",
-          namespace: "html",
-          attributes: {
-            type: "button",
-          },
-          listeners: [
-            {
-              type: "click",
-              listener: (e: Event) => {
-                addon.hooks.onDialogEvents("clipboardExample");
-              },
-            },
-          ],
-          children: [
-            {
-              tag: "div",
-              styles: {
-                padding: "2.5px 15px",
-              },
-              properties: {
-                innerHTML: "example:clipboard",
-              },
-            },
-          ],
-        },
-        false,
-      )
-      .addCell(
-        7,
-        0,
-        {
-          tag: "button",
-          namespace: "html",
-          attributes: {
-            type: "button",
-          },
-          listeners: [
-            {
-              type: "click",
-              listener: (e: Event) => {
-                addon.hooks.onDialogEvents("filePickerExample");
-              },
-            },
-          ],
-          children: [
-            {
-              tag: "div",
-              styles: {
-                padding: "2.5px 15px",
-              },
-              properties: {
-                innerHTML: "example:filepicker",
-              },
-            },
-          ],
-        },
-        false,
-      )
-      .addCell(
-        8,
-        0,
-        {
-          tag: "button",
-          namespace: "html",
-          attributes: {
-            type: "button",
-          },
-          listeners: [
-            {
-              type: "click",
-              listener: (e: Event) => {
-                addon.hooks.onDialogEvents("progressWindowExample");
-              },
-            },
-          ],
-          children: [
-            {
-              tag: "div",
-              styles: {
-                padding: "2.5px 15px",
-              },
-              properties: {
-                innerHTML: "example:progressWindow",
-              },
-            },
-          ],
-        },
-        false,
-      )
-      .addCell(
-        9,
-        0,
-        {
-          tag: "button",
-          namespace: "html",
-          attributes: {
-            type: "button",
-          },
-          listeners: [
-            {
-              type: "click",
-              listener: (e: Event) => {
-                addon.hooks.onDialogEvents("vtableExample");
-              },
-            },
-          ],
-          children: [
-            {
-              tag: "div",
-              styles: {
-                padding: "2.5px 15px",
-              },
-              properties: {
-                innerHTML: "example:virtualized-table",
-              },
-            },
-          ],
-        },
-        false,
-      )
-      .addButton("Confirm", "confirm")
-      .addButton("Cancel", "cancel")
+
+    const numRows = 2 + Object.keys(fields).length;
+    const dialogHelper = new ztoolkit.Dialog(numRows, 1)
       .setDialogData(dialogData)
-      .open("Metadata Search");
+      .addCell(0, 0, {
+        tag: "h2",
+        properties: { innerHTML: "Item Metadata" },
+      });
+
+    let row = 2;
+    for (const [key, value] of Object.entries(fields)) {
+      dialogHelper.addCell(row, 0, {
+        tag: "div",
+        styles: {
+          display: "flex",
+          alignItems: "center",
+        },
+        children: [
+          {
+            tag: "span",
+            styles: {
+              width: "120px",
+              textAlign: "right",
+              fontWeight: "bold",
+              marginRight: "8px",
+            },
+            properties: { textContent: `${key}:` },
+          },
+          {
+            tag: "span",
+            properties: { textContent: value },
+          },
+        ],
+      });
+      row++;
+    }
+
+    dialogHelper.addButton("Close", "close").open("Metadata Search");
+
     addon.data.dialog = dialogHelper;
     await dialogData.unloadLock.promise;
     addon.data.dialog = undefined;
-    // if (addon.data.alive)
-    //   ztoolkit.getGlobal("alert")(
-    //     `Close dialog with ${dialogData._lastButtonId}.\nCheckbox: ${dialogData.checkboxValue}\nInput: ${dialogData.inputValue}.`,
-    //   );
     ztoolkit.log(dialogData);
   }
 }
