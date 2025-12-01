@@ -1,2 +1,2 @@
-pref("enable", true);
-pref("input", "This is input");
+pref("dblp-enable", true);
+pref("crossref-enable", true);
