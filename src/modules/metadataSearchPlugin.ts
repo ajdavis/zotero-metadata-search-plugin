@@ -255,6 +255,7 @@ export class MetadataSearchPlugin {
           overflowY: "auto",
         },
       })
+      .addButton("Update", "update", { disabled: true })
       .addButton("Close", "close")
       .open("Metadata Search", {
         width: 1200,
@@ -279,10 +280,46 @@ export class MetadataSearchPlugin {
     heading.innerHTML = "Item Metadata";
     container.appendChild(heading);
 
-    const createFieldDiv = (key: string, value: string): HTMLDivElement => {
+    const updateButtonState = () => {
+      const anyChecked =
+        doc.querySelectorAll('input[type="checkbox"][data-field-name]:checked')
+          .length > 0;
+      const updateButton = doc.querySelector('button[id="update"]');
+      if (updateButton) {
+        (updateButton as HTMLButtonElement).disabled = !anyChecked;
+      }
+    };
+
+    const createFieldDiv = (
+      key: string,
+      value: string,
+      withCheckbox: boolean = false,
+    ): HTMLDivElement => {
       const fieldDiv = doc.createElement("div")!;
       fieldDiv.style.display = "flex";
       fieldDiv.style.alignItems = "center";
+
+      if (withCheckbox) {
+        const checkbox = doc.createElement("input")!;
+        checkbox.type = "checkbox";
+        checkbox.style.marginRight = "8px";
+        checkbox.dataset.fieldName = key;
+        checkbox.addEventListener("change", () => {
+          if (checkbox.checked) {
+            // Uncheck all other checkboxes with the same field name
+            const allCheckboxes = doc.querySelectorAll(
+              `input[type="checkbox"][data-field-name="${key}"]`,
+            );
+            allCheckboxes.forEach((cb) => {
+              if (cb !== checkbox) {
+                (cb as HTMLInputElement).checked = false;
+              }
+            });
+          }
+          updateButtonState();
+        });
+        fieldDiv.appendChild(checkbox);
+      }
 
       const keySpan = doc.createElement("span")!;
       keySpan.style.width = "120px";
@@ -395,17 +432,20 @@ export class MetadataSearchPlugin {
               result.creators
                 .map((c: any) => `${c.firstName} ${c.lastName}`.trim())
                 .join(", "),
+              true,
             ),
           );
         }
 
         for (const [key, value] of Object.entries(result.fields)) {
-          resultSection.appendChild(createFieldDiv(key, value));
+          resultSection.appendChild(createFieldDiv(key, value, true));
         }
 
         resultsContainer.appendChild(resultSection);
       }
 
+      // Re-check the update button state after adding all results
+      updateButtonState();
       searchButton.disabled = false;
     });
 
