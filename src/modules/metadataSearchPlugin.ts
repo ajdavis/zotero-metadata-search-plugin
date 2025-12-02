@@ -316,7 +316,10 @@ export class MetadataSearchPlugin {
       return fieldDiv;
     };
 
+    container.appendChild(createFieldDiv("title", itemTitle));
+    container.appendChild(createFieldDiv("creators", creators.join(", ")));
     for (const [key, value] of Object.entries(fields)) {
+      if (key === "title") continue;
       container.appendChild(createFieldDiv(key, value));
     }
 
@@ -370,12 +373,16 @@ export class MetadataSearchPlugin {
           if (fieldName === "creators" && creatorData) {
             item.setCreators(JSON.parse(creatorData));
           } else {
-            item.setField(fieldName, fieldValue);
+            const fieldID = Zotero.ItemFields.getID(fieldName);
+            if (Zotero.ItemFields.isValidForType(fieldID, item.itemTypeID)) {
+              item.setField(fieldName, fieldValue);
+            }
           }
         });
 
-        await item.saveTx();
-        ztoolkit.getGlobal("alert")("Item updated successfully!");
+        ztoolkit.log("Updating item with selected metadata...");
+        const updated: boolean = (await item.saveTx()) as boolean;
+        ztoolkit.log(`Item updated: ${updated}`);
         dialogHelper.window?.close();
       });
     }

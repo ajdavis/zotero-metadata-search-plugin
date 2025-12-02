@@ -1,7 +1,5 @@
 make dialog modal
 
-don't show menu item if non-regular zot item is selected
-
 fix menu icon (doesn't show now, i can't figure out why)
 
 dark mode icon
