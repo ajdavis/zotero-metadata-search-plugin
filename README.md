@@ -5,6 +5,10 @@
 
 Update Zotero items with metadata from bibliographic databases like CrossRef.org and DBLP.org. If you want to add more search engines, pull requests are welcome, look at `searchCrossRef()` in `metadataSearchPlugin.js` as an example.
 
+# Installation
+
+Download the latest .xpi file from the [releases page](https://github.com/ajdavis/zotero-metadata-search-plugin/releases) and follow [Zotero's instructions for installing it](https://www.zotero.org/support/plugins).
+
 # Development
 
 This plugin code's is based on windingwind's [Zotero plugin template](https://github.com/windingwind/zotero-plugin-template), and so is this development guide.
