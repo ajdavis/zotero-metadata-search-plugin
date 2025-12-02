@@ -1,7 +1,7 @@
 {
   "name": "zotero-metadata-search-plugin",
   "type": "module",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Update Zotero items with metadata from bibliographic databases like CrossRef.org and DBLP.org",
   "config": {
     "addonName": "Metadata Search",
