@@ -13,6 +13,7 @@ export class MetadataSearchPlugin {
   static registerRightClickMenuItem() {
     const icon = `chrome://${addon.data.config.addonRef}/content/icons/favicon@0.5x.png`;
     const darkIcon = `chrome://${addon.data.config.addonRef}/content/icons/favicon-dark@0.5x.png`;
+    // @ts-expect-error - MenuManager is not typed
     Zotero.MenuManager.registerMenu({
       menuID: `${addon.data.config.addonRef}-rightclick-menuitem`,
       pluginID: addon.data.config.addonID,
@@ -24,10 +25,10 @@ export class MetadataSearchPlugin {
           // TODO: the icon doesn't appear in the menu
           icon: icon,
           darkIcon: darkIcon,
-          onCommand: (event, context) => {
+          onCommand: (event: any, context: any) => {
             this.showMetadataSearchDialog(context.items[0]?.id);
           },
-          onShowing: (event, context) => {
+          onShowing: (event: any, context: any) => {
             context.setEnabled(context.items[0]?.isRegularItem());
             return true;
           },
@@ -58,7 +59,7 @@ export class MetadataSearchPlugin {
     ztoolkit.log("CrossRef URL:", url);
     const response = await fetch(url);
     ztoolkit.log("CrossRef response status:", response.status);
-    const data = await response.json();
+    const data = (await response.json()) as any;
     ztoolkit.log("CrossRef data:", data);
     const results: SearchResult[] = [];
 
@@ -133,7 +134,7 @@ export class MetadataSearchPlugin {
     ztoolkit.log("DBLP URL:", url);
     const response = await fetch(url);
     ztoolkit.log("DBLP response status:", response.status);
-    const data = await response.json();
+    const data = (await response.json()) as any;
     ztoolkit.log("DBLP data:", data);
     const results: SearchResult[] = [];
 
@@ -232,7 +233,7 @@ export class MetadataSearchPlugin {
           overflowY: "auto",
         },
       })
-      .addButton("Update", "update", { disabled: true })
+      .addButton("Update", "update")
       .addButton("Close", "close")
       .open("Metadata Search", {
         width: 1200,
@@ -267,6 +268,8 @@ export class MetadataSearchPlugin {
       }
     };
 
+    updateButtonState();
+
     const createFieldDiv = (
       key: string,
       value: string,
@@ -292,7 +295,7 @@ export class MetadataSearchPlugin {
             const allCheckboxes = doc.querySelectorAll(
               `input[type="checkbox"][data-field-name="${key}"]`,
             );
-            allCheckboxes.forEach((cb) => {
+            allCheckboxes.forEach((cb: Element) => {
               if (cb !== checkbox) {
                 (cb as HTMLInputElement).checked = false;
               }
@@ -367,7 +370,7 @@ export class MetadataSearchPlugin {
           'input[type="checkbox"][data-field-name]:checked',
         ) as NodeListOf<HTMLInputElement>;
 
-        checkedBoxes.forEach((checkbox) => {
+        checkedBoxes.forEach((checkbox: HTMLInputElement) => {
           const fieldName = checkbox.dataset.fieldName!;
           const fieldValue = checkbox.dataset.fieldValue!;
           const creatorData = checkbox.dataset.creatorData;
@@ -446,7 +449,7 @@ export class MetadataSearchPlugin {
           const checkboxes = resultSection.querySelectorAll(
             'input[type="checkbox"][data-field-name]',
           ) as NodeListOf<HTMLInputElement>;
-          checkboxes.forEach((cb) => {
+          checkboxes.forEach((cb: HTMLInputElement) => {
             cb.checked = checked;
           });
           updateButtonState();
