@@ -12,19 +12,25 @@ interface SearchResult {
 export class MetadataSearchPlugin {
   static registerRightClickMenuItem() {
     const menuIcon = `chrome://${addon.data.config.addonRef}/content/icons/favicon@0.5x.png`;
-    // item menuitem with icon
-    ztoolkit.Menu.register("item", {
-      tag: "menuitem",
-      id: "zotero-metadata-search-plugin-rightclick-menuitem",
-      label: getString("menuitem-label"),
-      commandListener: (ev) => {
-        const itemID: number = Number(
-          ev.composedTarget?.parentNode?.attributes.getNamedItem("itemID")
-            ?.value,
-        );
-        this.showMetadataSearchDialog(itemID);
-      },
-      icon: menuIcon,
+    Zotero.MenuManager.registerMenu({
+      menuID: `${addon.data.config.addonRef}-rightclick-menuitem`,
+      pluginID: addon.data.config.addonID,
+      target: "main/library/item",
+      menus: [
+        {
+          menuType: "menuitem",
+          l10nID: `${addon.data.config.addonRef}-menuitem-label`,
+          icon: menuIcon, // TODO: doesn't appear
+          // darkIcon: menuIcon, // TODO
+          onCommand: (event, context) => {
+            this.showMetadataSearchDialog(context.items[0]?.id);
+          },
+          onShowing: (event, context) => {
+            context.setEnabled(context.items[0]?.isRegularItem());
+            return true;
+          },
+        },
+      ],
     });
   }
 

@@ -1,5 +1,7 @@
 make dialog modal
 
-replace ztoolkit.Menu call with Zotero.MenuManager, the former is deprecated: https://windingwind.github.io/zotero-plugin-toolkit/reference/Class.MenuManager.html
-
 don't show menu item if non-regular zot item is selected
+
+fix menu icon (doesn't show now, i can't figure out why)
+
+dark mode icon

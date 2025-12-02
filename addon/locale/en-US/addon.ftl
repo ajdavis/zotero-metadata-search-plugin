@@ -1,1 +1,2 @@
-menuitem-label = Metadata Search
+menuitem-label = 
+  .label = Metadata Search
