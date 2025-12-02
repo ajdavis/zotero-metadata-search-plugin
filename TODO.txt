@@ -1,5 +1,3 @@
 make dialog modal
 
 fix menu icon (doesn't show now, i can't figure out why)
-
-dark mode icon

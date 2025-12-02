@@ -11,7 +11,8 @@ interface SearchResult {
 
 export class MetadataSearchPlugin {
   static registerRightClickMenuItem() {
-    const menuIcon = `chrome://${addon.data.config.addonRef}/content/icons/favicon@0.5x.png`;
+    const icon = `chrome://${addon.data.config.addonRef}/content/icons/favicon@0.5x.png`;
+    const darkIcon = `chrome://${addon.data.config.addonRef}/content/icons/favicon-dark@0.5x.png`;
     Zotero.MenuManager.registerMenu({
       menuID: `${addon.data.config.addonRef}-rightclick-menuitem`,
       pluginID: addon.data.config.addonID,
@@ -20,8 +21,9 @@ export class MetadataSearchPlugin {
         {
           menuType: "menuitem",
           l10nID: `${addon.data.config.addonRef}-menuitem-label`,
-          icon: menuIcon, // TODO: doesn't appear
-          // darkIcon: menuIcon, // TODO
+          // TODO: the icon doesn't appear in the menu
+          icon: icon,
+          darkIcon: darkIcon,
           onCommand: (event, context) => {
             this.showMetadataSearchDialog(context.items[0]?.id);
           },
