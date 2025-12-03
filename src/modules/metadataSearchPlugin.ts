@@ -12,6 +12,36 @@ interface SearchResult {
 export class MetadataSearchPlugin {
   static registerRightClickMenuItem() {
     const icon = `chrome://${addon.data.config.addonRef}/content/icons/favicon@0.5x.png`;
+
+    // This API is deprecated and will be removed from zotero-plugin-toolkit 6 mos after Zotero 8 is
+    // released: windingwind.github.io/zotero-plugin-toolkit/reference/Class.MenuManager.html
+    // But meanwhile it works, and the new Zotero.MenuManager.registerMenu (see commented code
+    // below) doesn't seem to work with icons, and isn't available on Zotero 7.
+    // TODO: check Zotero version at runtime and use the new API when available.
+    // TODO: also remove menuitem-label-ztoolkit from locale file.
+    ztoolkit.Menu.register("item", {
+      tag: "menuitem",
+      id: "zotero-metadata-search-plugin-rightclick-menuitem",
+      label: getString("menuitem-label-ztoolkit"),
+      commandListener: (ev) => {
+        const itemID: number = Number(
+          // @ts-expect-error - composedTarget is not typed
+          ev.composedTarget?.parentNode?.attributes.getNamedItem("itemID")
+            ?.value,
+        );
+        this.showMetadataSearchDialog(itemID);
+      },
+      onShowing: (elem, ev) => {
+        const regularItemsSelected =
+          Zotero.getMainWindow()
+            .ZoteroPane.getSelectedItems()
+            .filter((item) => item.isRegularItem()).length > 0;
+        elem.disabled = !regularItemsSelected;
+      },
+      icon: icon,
+    });
+
+    /*
     const darkIcon = `chrome://${addon.data.config.addonRef}/content/icons/favicon-dark@0.5x.png`;
     // @ts-expect-error - MenuManager is not typed
     Zotero.MenuManager.registerMenu({
@@ -22,7 +52,6 @@ export class MetadataSearchPlugin {
         {
           menuType: "menuitem",
           l10nID: `${addon.data.config.addonRef}-menuitem-label`,
-          // TODO: the icon doesn't appear in the menu
           icon: icon,
           darkIcon: darkIcon,
           onCommand: (event: any, context: any) => {
@@ -35,6 +64,7 @@ export class MetadataSearchPlugin {
         },
       ],
     });
+    */
   }
 
   private static titleSimilarity(title1: string, title2: string): number {

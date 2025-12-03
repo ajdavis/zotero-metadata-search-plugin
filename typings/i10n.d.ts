@@ -3,4 +3,5 @@
 /* eslint-disable */
 // @ts-nocheck
 export type FluentMessageId =
-  | 'menuitem-label';
+  | 'menuitem-label'
+  | 'menuitem-label-ztoolkit';
