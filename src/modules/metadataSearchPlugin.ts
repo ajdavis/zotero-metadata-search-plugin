@@ -242,9 +242,11 @@ export class MetadataSearchPlugin {
       const fields: Record<string, string> = {};
 
       if (work.title) fields.title = String(work.title);
-      if (work.doi) fields.DOI = String(work.doi).replace(/^https?:\/\/doi\.org\//, "");
+      if (work.doi)
+        fields.DOI = String(work.doi).replace(/^https?:\/\/doi\.org\//, "");
       if (work.publication_date) fields.date = String(work.publication_date);
-      else if (work.publication_year) fields.date = String(work.publication_year);
+      else if (work.publication_year)
+        fields.date = String(work.publication_year);
       if (work.language) fields.language = String(work.language);
 
       const biblio = work.biblio || {};
@@ -257,7 +259,8 @@ export class MetadataSearchPlugin {
       }
 
       const source = work.primary_location?.source;
-      if (source?.display_name) fields.publicationTitle = String(source.display_name);
+      if (source?.display_name)
+        fields.publicationTitle = String(source.display_name);
       if (work.primary_location?.landing_page_url) {
         fields.url = String(work.primary_location.landing_page_url);
       }
@@ -310,12 +313,16 @@ export class MetadataSearchPlugin {
       const published = textOf(entry, "published");
       if (published) fields.date = published.split("T")[0];
 
-      const arxivId = textOf(entry, "id").replace(/^https?:\/\/arxiv\.org\/abs\//, "");
+      const arxivId = textOf(entry, "id").replace(
+        /^https?:\/\/arxiv\.org\/abs\//,
+        "",
+      );
       if (arxivId) fields.url = `https://arxiv.org/abs/${arxivId}`;
 
       const doi = textOf(entry, "arxiv:doi");
       if (doi) fields.DOI = doi;
-      else if (arxivId) fields.DOI = `10.48550/arxiv.${arxivId.replace(/v\d+$/, "")}`;
+      else if (arxivId)
+        fields.DOI = `10.48550/arxiv.${arxivId.replace(/v\d+$/, "")}`;
 
       const journalRef = textOf(entry, "arxiv:journal_ref");
       if (journalRef) fields.publicationTitle = journalRef;
