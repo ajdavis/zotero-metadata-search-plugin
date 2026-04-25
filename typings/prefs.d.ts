@@ -9,6 +9,8 @@ declare namespace _ZoteroTypes {
     PluginPrefsMap: {
       "dblp-enable": boolean;
       "crossref-enable": boolean;
+      "openalex-enable": boolean;
+      "arxiv-enable": boolean;
     };
   }
 }

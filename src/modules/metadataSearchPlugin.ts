@@ -9,6 +9,25 @@ interface SearchResult {
   similarity: number;
 }
 
+type SourceKey = "crossref" | "dblp" | "openalex" | "arxiv";
+type EnablePref = `${SourceKey}-enable`;
+
+const SOURCES: { key: SourceKey; label: string }[] = [
+  { key: "crossref", label: "CrossRef.org" },
+  { key: "dblp", label: "DBLP.org" },
+  { key: "openalex", label: "OpenAlex.org" },
+  { key: "arxiv", label: "arXiv.org" },
+];
+
+function splitName(fullName: string): { firstName: string; lastName: string } {
+  const parts = fullName.trim().split(/\s+/);
+  if (parts.length === 1) return { firstName: "", lastName: parts[0] || "" };
+  return {
+    firstName: parts.slice(0, -1).join(" "),
+    lastName: parts[parts.length - 1],
+  };
+}
+
 export class MetadataSearchPlugin {
   static registerRightClickMenuItem() {
     const icon = `chrome://${addon.data.config.addonRef}/content/icons/favicon@0.5x.png`;
@@ -187,15 +206,10 @@ export class MetadataSearchPlugin {
           ? info.authors.author
           : [info.authors.author];
         creators = authors
-          .map((a: any) => {
-            const fullName = a.text || a;
-            const nameParts = fullName.split(" ");
-            return {
-              creatorType: "author",
-              firstName: nameParts.slice(0, -1).join(" "),
-              lastName: nameParts[nameParts.length - 1] || "",
-            };
-          })
+          .map((a: any) => ({
+            creatorType: "author",
+            ...splitName(a.text || a),
+          }))
           .filter((c: any) => c.firstName || c.lastName);
       }
 
@@ -212,6 +226,123 @@ export class MetadataSearchPlugin {
       });
     }
     ztoolkit.log("DBLP results:", results.length);
+    return results;
+  }
+
+  private static async searchOpenAlex(
+    title: string,
+    _creators: string[],
+  ): Promise<SearchResult[]> {
+    const url =
+      `https://api.openalex.org/works?filter=title_and_abstract.search:${encodeURIComponent(title)}` +
+      `&per-page=10&sort=relevance_score:desc`;
+    ztoolkit.log("OpenAlex URL:", url);
+    const response = await fetch(url);
+    ztoolkit.log("OpenAlex response status:", response.status);
+    const data = (await response.json()) as any;
+    const results: SearchResult[] = [];
+
+    for (const work of data.results || []) {
+      const fields: Record<string, string> = {};
+
+      if (work.title) fields.title = String(work.title);
+      if (work.doi) fields.DOI = String(work.doi).replace(/^https?:\/\/doi\.org\//, "");
+      if (work.publication_date) fields.date = String(work.publication_date);
+      else if (work.publication_year) fields.date = String(work.publication_year);
+      if (work.language) fields.language = String(work.language);
+
+      const biblio = work.biblio || {};
+      if (biblio.volume) fields.volume = String(biblio.volume);
+      if (biblio.issue) fields.issue = String(biblio.issue);
+      if (biblio.first_page && biblio.last_page) {
+        fields.pages = `${biblio.first_page}-${biblio.last_page}`;
+      } else if (biblio.first_page) {
+        fields.pages = String(biblio.first_page);
+      }
+
+      const source = work.primary_location?.source;
+      if (source?.display_name) fields.publicationTitle = String(source.display_name);
+      if (work.primary_location?.landing_page_url) {
+        fields.url = String(work.primary_location.landing_page_url);
+      }
+
+      const creators = (work.authorships || [])
+        .map((a: any) => ({
+          creatorType: "author",
+          ...splitName(a.author?.display_name || a.raw_author_name || ""),
+        }))
+        .filter((c: any) => c.firstName || c.lastName);
+
+      results.push({
+        source: "OpenAlex",
+        title: fields.title || "",
+        creators,
+        fields,
+        similarity: this.titleSimilarity(title, fields.title || ""),
+      });
+    }
+    ztoolkit.log("OpenAlex results:", results.length);
+    return results;
+  }
+
+  private static async searchArxiv(
+    title: string,
+    _creators: string[],
+  ): Promise<SearchResult[]> {
+    const url =
+      `https://export.arxiv.org/api/query?search_query=ti:${encodeURIComponent(`"${title}"`)}` +
+      `&max_results=10`;
+    ztoolkit.log("arXiv URL:", url);
+    const response = await fetch(url);
+    ztoolkit.log("arXiv response status:", response.status);
+    const xmlText = await response.text();
+    const doc = new DOMParser().parseFromString(xmlText, "application/xml");
+    const results: SearchResult[] = [];
+
+    const textOf = (parent: any, tag: string): string => {
+      const el = parent.getElementsByTagName(tag)[0];
+      return el?.textContent?.trim() || "";
+    };
+
+    const entries: any[] = Array.from(doc.getElementsByTagName("entry") as any);
+    for (const entry of entries) {
+      const fields: Record<string, string> = {};
+      const entryTitle = textOf(entry, "title");
+      if (entryTitle) fields.title = entryTitle.replace(/\s+/g, " ");
+      const summary = textOf(entry, "summary");
+      if (summary) fields.abstractNote = summary.replace(/\s+/g, " ");
+      const published = textOf(entry, "published");
+      if (published) fields.date = published.split("T")[0];
+
+      const arxivId = textOf(entry, "id").replace(/^https?:\/\/arxiv\.org\/abs\//, "");
+      if (arxivId) fields.url = `https://arxiv.org/abs/${arxivId}`;
+
+      const doi = textOf(entry, "arxiv:doi");
+      if (doi) fields.DOI = doi;
+      else if (arxivId) fields.DOI = `10.48550/arxiv.${arxivId.replace(/v\d+$/, "")}`;
+
+      const journalRef = textOf(entry, "arxiv:journal_ref");
+      if (journalRef) fields.publicationTitle = journalRef;
+
+      const authorEls: any[] = Array.from(
+        entry.getElementsByTagName("author") as any,
+      );
+      const creators = authorEls
+        .map((a) => ({
+          creatorType: "author",
+          ...splitName(textOf(a, "name")),
+        }))
+        .filter((c) => c.firstName || c.lastName);
+
+      results.push({
+        source: "arXiv",
+        title: fields.title || "",
+        creators,
+        fields,
+        similarity: this.titleSimilarity(title, fields.title || ""),
+      });
+    }
+    ztoolkit.log("arXiv results:", results.length);
     return results;
   }
 
@@ -363,17 +494,16 @@ export class MetadataSearchPlugin {
     searchOptionsDiv.style.display = "flex";
     searchOptionsDiv.style.gap = "20px";
 
-    for (const source of ["crossref", "dblp"]) {
+    for (const { key, label: sourceLabel } of SOURCES) {
+      const pref = `${key}-enable` as EnablePref;
       const checkbox = doc.createElement("input")!;
       checkbox.type = "checkbox";
-      checkbox.id = `${source}-checkbox`;
-      checkbox.checked = getPref(
-        `${source}-enable` as "crossref-enable" | "dblp-enable",
-      );
+      checkbox.id = `${key}-checkbox`;
+      checkbox.checked = getPref(pref);
 
       const label = doc.createElement("label")!;
-      label.htmlFor = `${source}-checkbox`;
-      label.textContent = source === "crossref" ? "CrossRef.org" : "DBLP.org";
+      label.htmlFor = `${key}-checkbox`;
+      label.textContent = sourceLabel;
       label.style.display = "flex";
       label.style.alignItems = "center";
       label.style.gap = "5px";
@@ -382,10 +512,7 @@ export class MetadataSearchPlugin {
       searchOptionsDiv.appendChild(label);
 
       checkbox.addEventListener("change", () => {
-        setPref(
-          `${source}-enable` as "crossref-enable" | "dblp-enable",
-          checkbox.checked,
-        );
+        setPref(pref, checkbox.checked);
       });
     }
 
@@ -447,13 +574,18 @@ export class MetadataSearchPlugin {
       resultsContainer.innerHTML = "";
       searchButton.disabled = true;
 
-      const searchPromises: Promise<SearchResult[]>[] = [];
-      if (getPref("crossref-enable")) {
-        searchPromises.push(this.searchCrossRef(itemTitle, creators));
-      }
-      if (getPref("dblp-enable")) {
-        searchPromises.push(this.searchDBLP(itemTitle, creators));
-      }
+      const searchFns: Record<
+        SourceKey,
+        (t: string, c: string[]) => Promise<SearchResult[]>
+      > = {
+        crossref: this.searchCrossRef.bind(this),
+        dblp: this.searchDBLP.bind(this),
+        openalex: this.searchOpenAlex.bind(this),
+        arxiv: this.searchArxiv.bind(this),
+      };
+      const searchPromises: Promise<SearchResult[]>[] = SOURCES.filter(
+        ({ key }) => getPref(`${key}-enable` as EnablePref),
+      ).map(({ key }) => searchFns[key](itemTitle, creators));
 
       const allResults: SearchResult[] = [];
       const resultsArrays = await Promise.allSettled(searchPromises);
