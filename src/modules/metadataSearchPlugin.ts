@@ -391,6 +391,7 @@ export class MetadataSearchPlugin {
         tag: "div",
         id: "content-container",
         styles: {
+          maxHeight: "calc(100vh - 80px)",
           overflowY: "auto",
         },
       })
