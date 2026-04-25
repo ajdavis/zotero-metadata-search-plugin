@@ -30,12 +30,9 @@ function splitName(fullName: string): { firstName: string; lastName: string } {
 
 export class MetadataSearchPlugin {
   static registerRightClickMenuItem() {
-    const icon = `chrome://${addon.data.config.addonRef}/content/icons/favicon@0.5x.png`;
-
     // This API is deprecated and will be removed from zotero-plugin-toolkit 6 mos after Zotero 8 is
     // released: windingwind.github.io/zotero-plugin-toolkit/reference/Class.MenuManager.html
-    // But meanwhile it works, and the new Zotero.MenuManager.registerMenu (see commented code
-    // below) doesn't seem to work with icons, and isn't available on Zotero 7.
+    // The replacement Zotero.MenuManager.registerMenu isn't available on Zotero 7.
     // TODO: check Zotero version at runtime and use the new API when available.
     // TODO: also remove menuitem-label-ztoolkit from locale file.
     ztoolkit.Menu.register("item", {
@@ -57,7 +54,6 @@ export class MetadataSearchPlugin {
             .filter((item) => item.isRegularItem()).length > 0;
         elem.disabled = !regularItemsSelected;
       },
-      icon: icon,
     });
 
     /*
